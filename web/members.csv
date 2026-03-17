@@ -1,0 +1,4 @@
+id,name,games,total_points,total_throws,total_cost_eur,joined_at
+1,TEST USER 1 [U1],13,188,45,0.0,2025-12-06
+2,TEST USER 2 [U_2],14,204,54,0.0,2025-12-06
+3,TEST USER 3 [U-3],3,25,8,0.03,2025-12-06
