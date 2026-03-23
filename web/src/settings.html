@@ -1,0 +1,26 @@
+<div class="card">
+    <h2 style="margin:0 0 12px">Admin</h2>
+    <div class="row">
+      <div class="col">
+        <label class="small">Aktuelles Passwort</label>
+        <input class="input" id="oldPw" type="password" placeholder="Aktuelles Passwort" />
+      </div>
+      <div class="col">
+        <label class="small">Neues Passwort</label>
+        <input class="input" id="newPw" type="password" placeholder="Neues Passwort" />
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <button class="button" onclick="changePw()">Passwort speichern</button>
+    </div>
+    <script>
+      async function changePw(){
+        const oldPw = document.getElementById('oldPw').value;
+        const newPw = document.getElementById('newPw').value;
+        if(!oldPw || !newPw) return alert('Bitte beide Felder ausfüllen');
+        const r = await fetch('/api/password', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({oldPw, newPw})});
+        const j = await r.json();
+        if(r.ok) alert('Passwort geändert'); else alert(j.error || 'Fehler');
+      }
+    </script>
+</div>

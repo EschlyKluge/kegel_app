@@ -1,0 +1,52 @@
+<div class="card">  
+    <h2 style="margin:0 0 12px">Mitglieder</h2>
+    <table class="table">
+      <thead><tr><th>Name</th><th>Dabei seit</th><th>Ø Treffer Quote</th><th></th></tr></thead>
+      <tbody>
+        {% for m in members %}
+        {% set avg = (m.total_points / m.total_throws) if m.total_throws > 0 else 0 %}
+        <tr>
+          <td><b>{{m.name}}</b></td>
+          <td>{{m.joined_at}}</td>
+          <td>{{ "{:.2f}".format(avg) }}</td>
+          <td style="text-align:right;"><button class="button danger" onclick="delMember('{{m.id}}')">Löschen</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>
+
+<div class="card" style="margin-top:16px;">
+    <h3>Neues Mitglied</h3>
+    <div class="row">
+      <input class="input col" id="newName" placeholder="Name eingeben" />
+      <button class="button ok" onclick="addMember()">Anlegen</button>
+    </div>
+</div>
+
+<script>
+    async function addMember(){
+      
+      const name = document.getElementById('newName').value.trim();
+      if(!name) 
+        return alert('Name fehlt');
+      
+      const r = await fetch('/api/member', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name})});
+      if(r.ok) 
+        location.reload(); 
+      else 
+        alert('Fehler beim Anlegen');
+    }
+    
+    async function delMember(id){
+      const pw = prompt('Admin‑Passwort zum Löschen eingeben:');
+      if(!pw) 
+        return;
+      
+      const r = await fetch('/api/member/'+id+'?pw='+encodeURIComponent(pw), {method:'DELETE'});
+      if(r.ok) 
+        location.reload(); 
+      else 
+        alert('Falsches Passwort oder Fehler.');
+    }
+</script>

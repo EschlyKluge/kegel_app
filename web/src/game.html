@@ -1,0 +1,516 @@
+<div class="card">
+    <h2 style="margin:0 0 10px">Aktuelles Spiel</h2>
+    
+    <!-- Setup Area -->
+    <div id="setupArea">
+        <div class="row wrap" style="margin-bottom:12px;align-items:flex-start">
+            <div class="col">
+                <label class="small">Spieler auswählen (Reihenfolge durch Auswahl)</label>
+                <div style="margin-bottom:6px;">
+                    <input class="input" id="searchMember" oninput="filterMembers()" placeholder="🔍 Spieler suchen..." style="padding:10px 14px; font-size:14px;">
+                </div>
+                <div class="checklist" id="playerChecklist">
+                {% for m in members %}
+                    <label data-search-name="{{ m.name|lower }}" data-id="{{ m.id }}">
+                        <span class="rank-badge" id="badge-{{ m.id }}"></span>
+                        <input type="checkbox" value="{{ m.id }}" onclick="togglePlayer('{{ m.id }}', this.checked)" autocomplete="off"/> 
+                        <span>{{ m.display_name }}</span>
+                    </label>
+                {% endfor %}
+                </div>
+                <div class="row" style="margin-top:8px;">
+                <button class="button" onclick="selectAll(true)">Alle</button>
+                <button class="button" onclick="selectAll(false)">Keine</button>
+                </div>
+            </div>
+            <div class="col">
+                <label class="small">Würfe pro Durchgang [max. 10]</label>
+                <div class="row">
+                    <button class="iconbtn" onclick="chgThrows(-1)">−</button>
+                    <input id="throwsInput" class="input" type="number" min="1" max="10" value="3" style="max-width:120px;text-align:center;font-weight:800;"/>
+                    <button class="iconbtn" onclick="chgThrows(1)">+</button>
+                    <span class="badge" id="throwsBadge">3</span>
+                </div>
+                <div class="row" style="margin-top:12px;">
+                    <div class="col">
+                        <label class="small">Strafe - Kegel stehen [€]</label>
+                        <div class="row">
+                        <button class="iconbtn" onclick="chgPrice('priceStanding',-0.01)">−</button>
+                        <input id="priceStanding" class="input" type="number" step="0.01" min="0" value="0.00" style="max-width:120px;text-align:center;"/>
+                        <button class="iconbtn" onclick="chgPrice('priceStanding',+0.01)">+</button>
+                    </div>
+                </div>
+                <div class="col">
+                    <label class="small">Strafe - Fehlwurf [€]</label>
+                    <div class="row">
+                        <button class="iconbtn" onclick="chgPrice('priceMiss',-0.01)">−</button>
+                        <input id="priceMiss" class="input" type="number" step="0.01" min="0" value="0.00" style="max-width:120px;text-align:center;"/>
+                        <button class="iconbtn" onclick="chgPrice('priceMiss',+0.01)">+</button>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top:12px;">
+                <label class="small">Spiel-Modi</label>
+                <div class="segment" id="modeSeg">
+                    <div class="seg active" data-mode="VOLLE" onclick="setMode('VOLLE', this)">
+                        In die Vollen
+                    </div>
+                    <div class="seg" data-mode="ABRAEUMEN" onclick="setMode('ABRAEUMEN', this)">
+                        Abräumen
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        <div class="row" style="margin-top:16px;">
+            <button class="button ok" onclick="startGame()">Spiel starten</button>
+        </div>
+    </div>
+  </div>
+
+  <div class="card" id="gameArea" style="display:none; margin-top:16px;">
+    <div class="game-header">
+      <div class="gh-top">
+          <div class="gh-title">Würfe erfassen für</div>
+      </div>
+      <div class="gh-player" id="activePlayerName">Spieler</div>
+      <div class="gh-stats-row">
+          <div class="gh-stat" id="activeThrowInfo"></div>
+          <div class="gh-detail" id="activeTurnDetail">Kegel pro Wurf: -</div>
+      </div>
+    </div>
+
+    <div class="numpad" style="margin-top:12px;">
+      <button class="num-btn" id="btn-1" onclick="press(1)">1</button>
+      <button class="num-btn" id="btn-2" onclick="press(2)">2</button>
+      <button class="num-btn" id="btn-3" onclick="press(3)">3</button>
+      <button class="num-btn" id="btn-4" onclick="press(4)">4</button>
+      <button class="num-btn" id="btn-5" onclick="press(5)">5</button>
+      <button class="num-btn" id="btn-6" onclick="press(6)">6</button>
+      <button class="num-btn" id="btn-7" onclick="press(7)">7</button>
+      <button class="num-btn" id="btn-8" onclick="press(8)">8</button>
+      <button class="num-btn" id="btn-9" onclick="press(9)">9</button>
+      <button class="primary num-btn" id="btn-0" onclick="press(0)">0</button>
+      <button class="primary num-btn" id="btn-undo" onclick="undo()">⌫</button>
+      <button class="primary" id="btnNext" onclick="next()">Weiter</button>
+    </div>
+    
+    <div id="playerSummary" class="player-list"></div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">Würfe Gesamt</div>
+        <div class="val" id="totalThrows">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Kegel Gesamt</div>
+        <div class="val" id="totalPoints">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Spiel-Kasse</div>
+        <div class="val" id="totalCost">0.00 €</div>
+      </div>
+    </div>
+    
+    <div class="row" style="margin-top:16px;">
+        <button class="button warn" onclick="finishGame()">Spiel beenden</button>
+        <button class="button danger" onclick="cancelGame()">Spiel abbrechen</button>
+    </div>
+</div>
+
+
+<script>
+    let throwsPerTurn = 3;  
+    let priceStanding = 0.00; 
+    let priceMiss = 0.00;     
+    let mode = 'VOLLE';       
+    let game = [];            
+    let iPlayer = 0;
+    
+    let selectedPlayerIds = [];
+    
+    // JS 'allMembers' populated with NICKNAMES
+    const allMembers = {
+      {% for m in members %}
+        "{{m.id}}": "{{m.display_name}}",
+      {% endfor %}
+    };
+
+    const restoreData = {{ restored_game|tojson }};
+
+    function init(){
+        if(restoreData){
+            game = restoreData.players;
+            throwsPerTurn = restoreData.throwsPerPlayer || 3;
+            priceStanding = restoreData.priceStanding;
+            priceMiss = restoreData.priceMiss;
+            mode = restoreData.mode;
+            iPlayer = findActivePlayerRoundRobin();
+            
+            document.getElementById('throwsInput').value = throwsPerTurn;
+            document.getElementById('throwsBadge').innerText = throwsPerTurn;
+            document.getElementById('priceStanding').value = priceStanding.toFixed(2);
+            document.getElementById('priceMiss').value = priceMiss.toFixed(2);
+            document.querySelectorAll('#modeSeg .seg').forEach(s => {
+                s.classList.toggle('active', s.dataset.mode === mode);
+            });
+            
+            document.getElementById('setupArea').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            updateInfo();
+        } else {
+            // UX Fix: Ensure clean slate when not restoring
+            // Explicitly uncheck all checkboxes to prevent browser caching ghost selections
+            const cbs = document.querySelectorAll('#playerChecklist input[type="checkbox"]');
+            cbs.forEach(cb => cb.checked = false);
+            selectedPlayerIds = [];
+            updateRanks();
+        }
+    }
+
+    function findActivePlayerRoundRobin(){
+        if(game.length === 0) return 0;
+        for(let i=0; i<game.length; i++){
+            if(game[i].throws.length % throwsPerTurn !== 0) return i;
+        }
+        let minThrows = -1;
+        for(let i=0; i<game.length; i++){
+            let c = game[i].throws.length;
+            if(minThrows === -1 || c < minThrows) minThrows = c;
+        }
+        for(let i=0; i<game.length; i++){
+            if(game[i].throws.length === minThrows) return i;
+        }
+        return 0;
+    }
+
+    async function saveState(){
+        if(game.length === 0) return;
+        const payload = { players: game, throwsPerPlayer: throwsPerTurn, priceStanding, priceMiss, mode };
+        try {
+            await fetch('/api/update_game', {
+                method:'POST', 
+                headers:{'Content-Type':'application/json'}, 
+                body: JSON.stringify(payload)
+            });
+        } catch(e) { console.error("Save failed", e); }
+    }
+
+    // --- Setup Interaction ---
+
+    function updateRanks() {
+        document.querySelectorAll('.rank-badge').forEach(el => {
+            el.innerText = '';
+            el.classList.remove('visible');
+        });
+        selectedPlayerIds.forEach((id, index) => {
+            const badge = document.getElementById('badge-' + id);
+            if(badge) {
+                badge.innerText = index + 1;
+                badge.classList.add('visible');
+            }
+        });
+    }
+
+    window.togglePlayer = (id, isChecked) => {
+        if(isChecked) {
+            if(!selectedPlayerIds.includes(id)) selectedPlayerIds.push(id);
+        } else {
+            selectedPlayerIds = selectedPlayerIds.filter(pid => pid !== id);
+        }
+        updateRanks();
+    };
+
+    window.filterMembers = () => {
+        const term = document.getElementById('searchMember').value.toLowerCase();
+        document.querySelectorAll('#playerChecklist label').forEach(lbl => {
+            const name = lbl.getAttribute('data-search-name');
+            lbl.style.display = name.includes(term) ? 'flex' : 'none';
+        });
+    };
+
+    window.selectAll = (flag)=>{
+      const checkboxes = document.querySelectorAll('#playerChecklist input[type="checkbox"]');
+      checkboxes.forEach(cb=>{ cb.checked = !!flag; });
+      if(flag){
+          checkboxes.forEach(cb => {
+              if(!selectedPlayerIds.includes(cb.value)) selectedPlayerIds.push(cb.value);
+          });
+      } else {
+          selectedPlayerIds = [];
+      }
+      updateRanks();
+    }
+    
+    // --- Game Logic ---
+
+    function triggerFeedback(btnId) {
+        const btn = document.getElementById(btnId);
+        if(!btn) return;
+        btn.classList.remove('click-feedback');
+        void btn.offsetWidth; // Force reflow
+        btn.classList.add('click-feedback');
+        setTimeout(() => btn.classList.remove('click-feedback'), 150);
+    }
+
+    function updateInfo(){
+      if(game.length===0) return;
+      if(iPlayer >= game.length) iPlayer=0; 
+      
+      const g = game[iPlayer];
+      const currentThrowsTotal = g.throws.length;
+      
+      const actualActiveIndex = findActivePlayerRoundRobin();
+      const isBatchComplete = (iPlayer !== actualActiveIndex);
+      
+      // Controls for "Wait/Pulse" state
+      const btnNext = document.getElementById('btnNext');
+      
+      if(isBatchComplete){
+          btnNext.classList.add('pulse-green');
+          
+          // Case: Turn Complete (Waiting for Weiter)
+          // DISABLE inputs 0-9 to prevent accidental extra entries
+          for(let k=0; k<=9; k++){
+              const b = document.getElementById('btn-'+k);
+              if(b) b.disabled = true;
+          }
+          // ENABLE Undo so correction of last throw is possible
+          const btnUndo = document.getElementById('btn-undo');
+          if(btnUndo) btnUndo.disabled = false;
+          
+      } else {
+          btnNext.classList.remove('pulse-green');
+          
+          // Re-enable logic:
+          // 1. Undo is always available if not complete (logic handled in undo() but let's enable btn)
+          document.getElementById('btn-undo').disabled = false;
+          
+          // 2. Button 0 is always available
+          document.getElementById('btn-0').disabled = false;
+          
+          // 3. Buttons 1-9 depend on mode
+          const maxPins = (mode === 'ABRAEUMEN') ? g.remaining : 9;
+          
+          for(let k=1; k<=9; k++){
+              const btn = document.getElementById('btn-'+k);
+              if(btn) {
+                  btn.disabled = (k > maxPins);
+              }
+          }
+      }
+
+      // Display calculations
+      const throwInBatch = isBatchComplete ? throwsPerTurn : (currentThrowsTotal % throwsPerTurn) + 1;
+      
+      let turnDetailText = "Wurf:Kegel";
+      let displayMod = currentThrowsTotal % throwsPerTurn;
+      if(displayMod === 0 && currentThrowsTotal > 0) displayMod = throwsPerTurn; 
+      
+      if (currentThrowsTotal > 0) {
+          const currentTurnThrows = g.throws.slice(-displayMod);
+          const parts = currentTurnThrows.map((score, idx) => `W${idx+1}:K${score}`);
+          const sum = currentTurnThrows.reduce((a,b)=>a+b, 0);
+          turnDetailText = `Wurf:Kegel | < ${parts.join(' • ')} > | Total: <K${sum}>`;
+      }
+
+      document.getElementById('activePlayerName').innerText = g.name;
+      
+      // Color coded throw info
+      let throwHTML = `Wurf <span class="val-curr">${throwInBatch}</span> von <span class="val-total">${throwsPerTurn}</span>`;
+      if(mode==='ABRAEUMEN') throwHTML += ` <span style="color:var(--muted)"> - Kegel über: ${g.remaining}</span>`;
+      
+      document.getElementById('activeThrowInfo').innerHTML = throwHTML;
+      document.getElementById('activeTurnDetail').innerText = turnDetailText;
+      
+      const sumThrows = game.reduce((s,p)=>s+p.throws.length,0);
+      const sumPoints = game.reduce((s,p)=>s+p.points,0);
+      const sumCost   = game.reduce((s,p)=>s+p.cost,0);
+      
+      document.getElementById('totalThrows').innerText = sumThrows;
+      document.getElementById('totalPoints').innerText = sumPoints;
+      document.getElementById('totalCost').innerText = sumCost.toFixed(2) + ' €';
+
+      // Sort logic for Leaderboard: Points Descending, then Throws Ascending
+      // We map to preserve the original index to identify 'iPlayer' correctly
+      let displayList = game.map((p, idx) => ({ ...p, origIdx: idx }));
+      
+      displayList.sort((a, b) => {
+          // Sort 1: Points Descending (Higher is better)
+          if (b.points !== a.points) return b.points - a.points;
+          // Sort 2: Throws Ascending (Efficiency)
+          return a.throws.length - b.throws.length;
+      });
+
+      const html = displayList.map((p) => {
+         const activeClass = (p.origIdx === iPlayer) ? 'active' : '';
+         const avg = (p.throws.length > 0) ? (p.points / p.throws.length) : 0.0;
+         
+         return `
+         <div class="player-card ${activeClass}">
+            <div>
+                <div class="pc-name">${p.name}</div>
+                <div class="pc-meta">
+                    ${p.points} Kegel • ${p.throws.length} Würfe • Ø ${avg.toFixed(2)}
+                </div>
+            </div>
+            <div class="pc-cost">${p.cost.toFixed(2)} €</div>
+         </div>
+         `;
+      }).join('');
+      document.getElementById('playerSummary').innerHTML = html;
+    }
+
+    window.startGame = ()=>{
+      if(selectedPlayerIds.length===0){ alert('Spieler wählen'); return; }
+      game = selectedPlayerIds.map(id => {
+          return {
+              id: id,
+              name: allMembers[id] || 'Unbekannt',
+              throws: [],
+              points: 0,
+              cost: 0,
+              remaining: 9
+          };
+      });
+      iPlayer=0;
+      document.getElementById('setupArea').style.display='none';
+      document.getElementById('gameArea').style.display='block';
+      priceStanding = parseFloat(document.getElementById('priceStanding').value||'0')||0;
+      priceMiss = parseFloat(document.getElementById('priceMiss').value||'0')||0;
+      updateInfo();
+      saveState();
+    }
+
+    window.press = (n)=>{
+      if(n<0||n>9) return;
+      
+      // UX: Visual Feedback
+      triggerFeedback('btn-' + n);
+      
+      // Safety: check if batch is complete
+      const actualActiveIndex = findActivePlayerRoundRobin();
+      if(iPlayer !== actualActiveIndex) return; 
+
+      const g = game[iPlayer];
+
+      if(mode==='ABRAEUMEN' && n>g.remaining){ 
+          // UI should prevent this, but double check
+          return; 
+      }
+      
+      g.throws.push(n);
+      g.points += n;
+      if(priceStanding>0){ g.cost += (9-n) * priceStanding; }
+      if(n===0 && priceMiss>0){ g.cost += priceMiss; }
+      if(mode==='ABRAEUMEN'){ g.remaining -= n; if(g.remaining<=0) g.remaining=9; }
+
+      updateInfo();
+      saveState();
+    }
+
+    window.undo = ()=>{
+        const g = game[iPlayer];
+        if (!g || g.throws.length === 0) return;
+
+        // Check Logic: Are we "Waiting for Weiter"?
+        const actualActiveIndex = findActivePlayerRoundRobin();
+        const isWaitingForConfirmation = (iPlayer !== actualActiveIndex); 
+
+        // Ground Truth Logic:
+        // We can only undo if we are in the MIDDLE of a turn (mod != 0)
+        // OR if we just finished a turn and are waiting for confirmation (isWaitingForConfirmation).
+        // If we are at the exact start of a new turn (mod == 0 and NOT waiting), it means the previous batch was committed.
+        
+        const mod = g.throws.length % throwsPerTurn;
+        
+        if (mod !== 0 || isWaitingForConfirmation) {
+            popThrow(iPlayer);
+            updateInfo();
+            saveState();
+        } 
+        // Else: We are at start of a fresh turn/batch. Previous throws are locked. Do nothing.
+    }
+    
+    function popThrow(idx) {
+      const g = game[idx];
+      const last = g.throws.pop();
+      if(last===undefined) return;
+      g.points -= last;
+      if(priceStanding>0){ g.cost -= (9-last) * priceStanding; }
+      if(last===0 && priceMiss>0){ g.cost -= priceMiss; }
+      if(mode==='ABRAEUMEN'){ g.remaining += last; if(g.remaining>9) g.remaining=9; }
+    }
+
+    window.next = ()=>{
+      const g = game[iPlayer];
+      
+      const actualActiveIndex = findActivePlayerRoundRobin();
+      const isActuallyDone = (iPlayer !== actualActiveIndex);
+
+      if(isActuallyDone) {
+          if(mode === 'ABRAEUMEN') g.remaining = 9;
+          iPlayer = actualActiveIndex;
+      } else {
+          const remainder = throwsPerTurn - (g.throws.length % throwsPerTurn);
+          for(let k=0; k<remainder; k++){
+              g.throws.push(0); 
+              if(priceStanding>0) g.cost += 9 * priceStanding; 
+              if(priceMiss>0) g.cost += priceMiss; 
+          }
+          if(mode === 'ABRAEUMEN') g.remaining = 9;
+          iPlayer = findActivePlayerRoundRobin();
+      }
+      
+      updateInfo();
+      saveState();
+    }
+    
+    window.cancelGame = async () => {
+        if(!confirm('Spiel wirklich abbrechen? Daten gehen verloren!')) return;
+        await fetch('/api/clear_game', {method:'POST'});
+        location.reload();
+    }
+
+    window.finishGame = async ()=>{
+      if(game.length===0){ alert('Kein Spiel aktiv'); return; }
+      
+      // Sort for confirmation (Points Descending, Throws Ascending)
+      let sorted = [...game];
+      sorted.sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points;
+          return a.throws.length - b.throws.length;
+      });
+
+      const lines = sorted.map((p, i) => `#${i+1} ${p.name}: ${p.points} Holz, ${p.throws.length} Wurf, ${p.cost.toFixed(2)} €`).join('\n');
+      const total = game.reduce((s,p)=>s+p.cost,0).toFixed(2);
+      
+      if(!confirm('Ergebnisse speichern?\n\n' + lines + '\n\nGesamtkosten: ' + total + ' €')) return;
+      
+      const payload = { players: game, throwsPerPlayer: throwsPerTurn, priceStanding, priceMiss, mode };
+      const r = await fetch('/api/finish_game', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      const j = await r.json();
+      if(r.ok){ alert('Gespeichert. Mitglieder‑Statistiken aktualisiert.'); location.href='/stats'; }
+      else alert(j.error||'Fehler beim Speichern');
+    }
+    
+    window.chgThrows = (d)=>{
+      const el = document.getElementById('throwsInput');
+      let v = parseInt(el.value||'3',10) + d; if(isNaN(v)) v=3; v=Math.min(10,Math.max(1,v));
+      el.value = v; throwsPerTurn = v; document.getElementById('throwsBadge').innerText = String(v);
+      if(game.length > 0) { iPlayer = findActivePlayerRoundRobin(); updateInfo(); saveState(); }
+    }
+    window.chgPrice = (id,delta)=>{
+      const el = document.getElementById(id);
+      let v = parseFloat(el.value||'0'); if(isNaN(v)) v=0; v = Math.max(0, Math.round((v+delta)*100)/100);
+      el.value = v.toFixed(2);
+      if(id==='priceStanding') priceStanding=v; else priceMiss=v;
+      if(game.length > 0) { updateInfo(); saveState(); }
+    }
+    window.setMode = (m,node)=>{
+      mode=m; document.querySelectorAll('#modeSeg .seg').forEach(s=>s.classList.remove('active')); node.classList.add('active');
+      if(game.length > 0) { updateInfo(); saveState(); }
+    }
+
+    init();
+  </script>
