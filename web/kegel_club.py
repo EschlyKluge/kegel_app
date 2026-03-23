@@ -1,4 +1,27 @@
-# imports
+"""
+Durchgekegelt — Kegel-Club Web App (v0.32)
+
+Single-file Flask backend serving a touch-optimised web UI for German 9-pin
+skittles (Kegeln) clubs. Currently a pre-alpha POC: CSV-based persistence,
+no auth sessions, single shared admin password.
+
+Architecture overview:
+    kegel_club.py          Flask app — routes, API handlers, data I/O
+    src/base.html          Jinja2 base layout (nav, head, CSS injection)
+    src/base.css           Shared stylesheet (Apple-like design system)
+    src/<page>.html         Per-page body templates (home, club, stats, game, rules, settings)
+    db/members.csv         Member registry (created automatically on first run)
+    db/temp_game.csv       Active game state (survives page refresh, deleted on finish/cancel)
+    db/notsmart.txt        Admin password (plaintext — security fix pending)
+
+Rendering flow:
+    1. Route handler reads the page-specific template via read_file()
+    2. render_page() renders that body with Jinja2, then injects it into base.html
+    3. base.css is inlined into a <style> tag (no static file serving yet)
+
+See README.txt for changelog, roadmap, and TODOs.
+"""
+
 from __future__ import annotations
 from flask import Flask, request, jsonify, render_template_string
 import csv
@@ -6,20 +29,22 @@ import os
 import re
 from datetime import datetime
 
-# ---------- Constants ----------
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
 APP_TITLE = "Durchgekegelt v0.32"
 
-# ---------- Paths ----------
+# All paths are anchored to this file's directory so the app works
+# regardless of the working directory it is started from.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.join(BASE_DIR, "src")
 DATA_DIR = os.path.join(BASE_DIR, "db")
 
-# data files
 MEMBERS_DATA = os.path.join(DATA_DIR, "members.csv")
 TEMP_GAME_DATA = os.path.join(DATA_DIR, "temp_game.csv")
 PW_FILE = os.path.join(DATA_DIR, "notsmart.txt")
 
-# source files
 BASE_CSS = os.path.join(SRC_DIR, "base.css")
 BASE_HTML = os.path.join(SRC_DIR, "base.html")
 HOME_HTML = os.path.join(SRC_DIR, "home.html")
@@ -29,37 +54,46 @@ GAME_HTML = os.path.join(SRC_DIR, "game.html")
 RULES_HTML = os.path.join(SRC_DIR, "rules.html")
 SETTINGS_HTML = os.path.join(SRC_DIR, "settings.html")
 
-
-# ---------- Global Variables ----------
-
-_files_ensured = False
 REQUIRED_SRC_FILES = [BASE_HTML, BASE_CSS, HOME_HTML, CLUB_HTML, STATS_HTML, GAME_HTML, SETTINGS_HTML]
 MEMBER_FIELDS = ["id", "name", "games", "total_points", "total_throws", "total_cost_eur", "joined_at"]
 
+# ---------------------------------------------------------------------------
+# Startup & file validation
+# ---------------------------------------------------------------------------
 
-# ---------- Utility Functions ----------
+_files_ensured = False
+
 
 def ensure_files():
+    """Validate that all required source files exist and bootstrap data files.
+
+    Source files (src/*.html, src/*.css) are part of the app distribution.
+    If any are missing the app cannot render, so we fail fast with a clear
+    error listing every missing file.
+
+    Data files (db/) are user-generated at runtime and are created with
+    sensible defaults when absent.  rules.html is a special case: it lives
+    in src/ but is treated as user-editable content.
+
+    Called once at startup (__main__) and guarded by a flag so the
+    @app.before_request hook becomes a no-op after the first request.
+    """
     global _files_ensured
     if _files_ensured:
         return
 
-    # Source files — must exist (shipped with the app)
     missing = [f for f in REQUIRED_SRC_FILES if not os.path.exists(f)]
     if missing:
         names = "\n  ".join(missing)
         raise FileNotFoundError(f"Required source files missing:\n  {names}")
 
-    # Data directory + files — created with defaults if absent
     os.makedirs(DATA_DIR, exist_ok=True)
     if not os.path.exists(MEMBERS_DATA):
         with open(MEMBERS_DATA, "w", newline="", encoding="utf-8") as f:
-            csv.writer(f).writerow(["id", "name", "games", "total_points", "total_throws", "total_cost_eur", "joined_at"])
+            csv.writer(f).writerow(MEMBER_FIELDS)
     if not os.path.exists(PW_FILE):
         with open(PW_FILE, "w", encoding="utf-8") as f:
             f.write("admin")
-
-    # Rules are user-editable content — create placeholder if missing
     if not os.path.exists(RULES_HTML):
         with open(RULES_HTML, "w", encoding="utf-8") as f:
             f.write("<h3>Regeln</h3><p>Platzhalter.</p>")
@@ -67,7 +101,12 @@ def ensure_files():
     _files_ensured = True
 
 
+# ---------------------------------------------------------------------------
+# Template helpers
+# ---------------------------------------------------------------------------
+
 def read_file(file_path: str) -> str:
+    """Return the UTF-8 contents of *file_path*, or '' if it does not exist."""
     if not os.path.exists(file_path):
         return ""
     with open(file_path, encoding="utf-8") as f:
@@ -75,7 +114,14 @@ def read_file(file_path: str) -> str:
 
 
 def render_page(body_template: str, title_suffix: str, active: str, **ctx) -> str:
-    """Render a page body into the base layout. Handles CSS/base-HTML loading once."""
+    """Render a page body template into the base layout.
+
+    Args:
+        body_template: Raw Jinja2 string for the page body.
+        title_suffix:  Appended to APP_TITLE in the <title> tag.
+        active:        Key for the nav highlight ('home', 'club', 'stats', …).
+        **ctx:         Extra variables forwarded to the body template.
+    """
     body_html = render_template_string(body_template, **ctx)
     base_html = read_file(BASE_HTML)
     base_css = read_file(BASE_CSS)
@@ -89,7 +135,12 @@ def render_page(body_template: str, title_suffix: str, active: str, **ctx) -> st
     )
 
 
-def read_members():
+# ---------------------------------------------------------------------------
+# Member data I/O  (CSV-based, will be replaced by a real DB)
+# ---------------------------------------------------------------------------
+
+def read_members() -> list[dict]:
+    """Read all members from members.csv, coercing types."""
     members = []
     with open(MEMBERS_DATA, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
@@ -103,7 +154,8 @@ def read_members():
     return members
 
 
-def write_members(members: list[dict]):
+def write_members(members: list[dict]) -> None:
+    """Overwrite members.csv with *members*, filtering to MEMBER_FIELDS only."""
     with open(MEMBERS_DATA, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=MEMBER_FIELDS)
         writer.writeheader()
@@ -112,6 +164,7 @@ def write_members(members: list[dict]):
 
 
 def new_member_id(members: list[dict]) -> str:
+    """Return the lowest unused positive integer ID as a string."""
     existing = {int(m["id"]) for m in members} if members else set()
     i = 1
     while i in existing:
@@ -119,7 +172,12 @@ def new_member_id(members: list[dict]) -> str:
     return str(i)
 
 
+# ---------------------------------------------------------------------------
+# Auth  (plaintext — security hardening is the next phase)
+# ---------------------------------------------------------------------------
+
 def check_pw(pw: str) -> bool:
+    """Compare *pw* against the stored admin password (plaintext file)."""
     try:
         with open(PW_FILE, encoding="utf-8") as f:
             return pw == f.read().strip()
@@ -127,13 +185,27 @@ def check_pw(pw: str) -> bool:
         return False
 
 
+# ---------------------------------------------------------------------------
+# Display helpers
+# ---------------------------------------------------------------------------
+
 def get_display_name(full_name: str) -> str:
-    """'Name [Nick]' -> 'Nick', otherwise full name."""
+    """Extract a nickname from brackets: 'Max Müller [Maxi]' -> 'Maxi'."""
     match = re.search(r'\[(.*?)\]', full_name)
     return match.group(1).strip() if match else full_name
 
 
-def save_temp_game(players, throws_per_player, price_standing, price_miss, mode):
+# ---------------------------------------------------------------------------
+# Game state persistence  (temp_game.csv — ephemeral, deleted on finish)
+# ---------------------------------------------------------------------------
+
+def save_temp_game(players: list[dict], throws_per_player: int,
+                   price_standing: float, price_miss: float, mode: str) -> None:
+    """Persist the current game state so it survives a page refresh.
+
+    Each player becomes one row.  Global game settings (throws, prices, mode)
+    are duplicated per row for simplicity — read back from the first row.
+    """
     with open(TEMP_GAME_DATA, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["player_id", "name", "throws", "points", "cost_eur",
@@ -156,7 +228,12 @@ def save_temp_game(players, throws_per_player, price_standing, price_miss, mode)
             ])
 
 
-def load_temp_game():
+def load_temp_game() -> dict | None:
+    """Restore a previously saved game, or None if no game is active.
+
+    Returns a dict with keys: players, throwsPerPlayer, priceStanding,
+    priceMiss, mode — matching the JSON shape the JS frontend expects.
+    """
     if not os.path.exists(TEMP_GAME_DATA):
         return None
     try:
@@ -188,24 +265,27 @@ def load_temp_game():
         return None
 
 
-def clear_temp_game():
+def clear_temp_game() -> None:
+    """Delete the temp game file, resetting to 'no active game'."""
     if os.path.exists(TEMP_GAME_DATA):
         os.remove(TEMP_GAME_DATA)
 
 
-# ---------- App ----------
+# ---------------------------------------------------------------------------
+# Flask app & hooks
+# ---------------------------------------------------------------------------
 
 app = Flask(__name__)
 
-
-# ---------- Hooks ----------
 
 @app.before_request
 def _before_request():
     ensure_files()
 
 
-# ---------- Routes ----------
+# ---------------------------------------------------------------------------
+# Page routes — each renders a body template into the shared base layout
+# ---------------------------------------------------------------------------
 
 @app.route("/")
 def home():
@@ -227,6 +307,7 @@ def stats():
 
 @app.route("/scoreboard")
 def scoreboard():
+    """Game page — restores an active game if one exists, refreshing nicknames."""
     members = read_members()
     for m in members:
         m["display_name"] = get_display_name(m["name"])
@@ -259,10 +340,13 @@ def favicon():
     return ("", 204)
 
 
-# ---------- Request Handlers ----------
+# ---------------------------------------------------------------------------
+# JSON API — called by the JS frontend via fetch()
+# ---------------------------------------------------------------------------
 
 @app.post("/api/member")
 def api_add_member():
+    """Add a new member. Body: {"name": "..."}"""
     data = request.get_json(force=True)
     name = (data.get("name") or "").strip()
     if not name:
@@ -280,6 +364,7 @@ def api_add_member():
 
 @app.delete("/api/member/<id>")
 def api_delete_member(id):
+    """Delete a member. Requires admin password as ?pw= query param."""
     pw = request.args.get("pw", "")
     if not check_pw(pw):
         return jsonify({"error": "Passwort falsch"}), 403
@@ -293,6 +378,7 @@ def api_delete_member(id):
 
 @app.post("/api/password")
 def api_change_password():
+    """Change admin password. Body: {"oldPw": "...", "newPw": "..."}"""
     data = request.get_json(force=True)
     if not check_pw(data.get("oldPw", "")):
         return jsonify({"error": "Aktuelles Passwort falsch"}), 403
@@ -306,6 +392,7 @@ def api_change_password():
 
 @app.post("/api/update_game")
 def api_update_game():
+    """Save current game state to temp_game.csv (called after every throw)."""
     data = request.get_json(force=True)
     save_temp_game(
         data.get("players", []),
@@ -319,12 +406,14 @@ def api_update_game():
 
 @app.post("/api/clear_game")
 def api_clear_game():
+    """Abort the current game without saving stats."""
     clear_temp_game()
     return jsonify({"ok": True})
 
 
 @app.post("/api/finish_game")
 def api_finish_game():
+    """Finish a game: merge player scores into members.csv and clear temp state."""
     data = request.get_json(force=True)
     players = data.get("players", [])
     if not players:
@@ -347,7 +436,9 @@ def api_finish_game():
     return jsonify({"ok": True})
 
 
-# ---------- Main ----------
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     ensure_files()
