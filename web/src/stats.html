@@ -1,0 +1,14 @@
+<div class="card">
+    <h2 style="margin:0 0 12px">All‑Time Statistiken</h2>
+    <table class="table">
+      <thead><tr><th>Name</th><th>Spiele</th><th>Würfe</th><th>Kegel</th><th>Treffer Quote</th><th>Strafe (€)</th></tr></thead>
+      <tbody>
+        {% for m in members %}
+        {% set p_per_throw = (m.total_points / m.total_throws if m.total_throws>0 else 0) %}
+        <tr>
+          <td>{{m.name}}</td><td>{{m.games}}</td><td>{{m.total_throws}}</td><td>{{m.total_points}}</td><td>{{"{:.2f}".format(p_per_throw)}}</td><td>{{"{:.2f}".format(m.total_cost_eur)}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>

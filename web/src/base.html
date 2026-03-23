@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+        <title>{{ title }}</title>
+        <style>{{ css|safe }}</style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+            <div class="h1">{{ app_title }}</div>
+            <div class="nav">
+                <a href="{{ url_for('home') }}" class="navbtn {% if active=='home' %}active{% endif %}"><span class="i">🏠</span><span>Home</span></a>
+                <a href="{{ url_for('club') }}" class="navbtn {% if active=='club' %}active{% endif %}"><span class="i">👥</span><span>Club</span></a>
+                <a href="{{ url_for('stats') }}" class="navbtn {% if active=='stats' %}active{% endif %}"><span class="i">📈</span><span>Stats</span></a>
+                <a href="{{ url_for('scoreboard') }}" class="navbtn {% if active=='score' %}active{% endif %}"><span class="i">🎯</span><span>Spiel</span></a>
+                <a href="{{ url_for('rules') }}" class="navbtn {% if active=='rules' %}active{% endif %}"><span class="i">📜</span><span>Regeln</span></a>
+                <a href="{{ url_for('admin') }}" class="navbtn {% if active=='admin' %}active{% endif %}"><span class="i">⚙️</span><span>Einstellungen</span></a>
+            </div>
+            </div>
+            {{ body|safe }}
+        </div>
+    </body>
+</html>
