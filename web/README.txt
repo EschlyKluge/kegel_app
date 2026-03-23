@@ -1,9 +1,43 @@
-Version 0.0.031
-Author: Eschly Jan kluge <kluge.eschly@gmail.com>
+Durchgekegelt — Kegel-Club App
+===============================
+Author: Eschly Jan Kluge <kluge.eschly@gmail.com>
+Version: 0.0.32 (Pre-Alpha)
+
+Lokale Web-App (kein externer Service noetig).
+Abhängigkeiten: see requirements.txt
+Start: python kegel_club.py
+
+Features (MVP):
+- Startseite mit großen Touch-Kacheln
+- Kegel-Club: Mitgliederliste, Beitrittsdatum, Schnitt-Anzeige
+- Strichliste (aktuelles Spiel):
+    - Auswahl der Spieler mit visueller Reihenfolge (#1, #2...)
+    - Live-Summen für den laufenden Durchgang (Turn Stats)
+    - Manual Turn Confirm ("Weiter")
+    - Auto-Sorting Leaderboard with Average calculation
+    - Nickname support
+- Persistenz: members.csv, temp_game.csv
+
 
 Changelog:
+----------
+v0.32 (2026-03-23):
+- Refactor: Extracted inline HTML/CSS/JS to src/ folder
+- Refactor: Fixed path resolution to use __file__ (works from any CWD)
+- Refactor: render_page() helper eliminates per-route boilerplate
+- Refactor: ensure_files() runs once via @app.before_request, not per-route
+- Refactor: Consistent 4-space indentation throughout
+- Refactor: Cleaned up unused imports
+- Hygiene: Added .gitignore, requirements.txt
+- Hygiene: ensure_files() now validates all required source files on startup
+
+v0.31:
+- UI: "Finish Game" confirmation dialog now shows a sorted leaderboard with rank numbers.
+- UX: Aborting a game now ensures the setup screen is completely cleared (no lingering selections).
+
 
 TODO:
+-----
 1. Club: Weniger Stats und keine Geldbeträge in Club-Mitglieder anzeigen, dafür aber Beitrittsdatum und durchschnittliche Trefferquote (Anzal_Kegel/Anzahl_Würfe) und Änderung der Trefferquote über Zeit, 
 1.1 Geldbeträge, nur unter admin settings nach eingäbe des admin PW anzeigen
 2. Stats: In stats die stats nach columns sortierbar machen und mehr stats anzeigen
