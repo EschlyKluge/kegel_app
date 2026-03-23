@@ -80,17 +80,17 @@ PHASE 0 — Foundation  [IN PROGRESS]
   [ ] 0.6  Security: Sanitise rules.html to prevent XSS via |safe
 
   Backlog — current web app polish:
-  [ ] 0.7  Club: Hide money columns; show join date + hit ratio instead
+  [x] 0.7  Club: Hide money columns; show join date + hit ratio instead
   [ ] 0.8  Club: Show money only in admin view after password entry
   [ ] 0.9  Stats: Make columns sortable, add more statistics
   [ ] 0.10 Game: Rename "Strichliste/Scoreboard" to "Spiel" throughout
-  [ ] 0.11 Game: Settings panel left, scoring panel right (layout)
-  [ ] 0.12 Game: Clearer active-player indicator + current-throw stats
-  [ ] 0.13 Game: Show "Wurf 2 von 3" instead of "2/3"
-  [ ] 0.14 Game: Abräumen — reset pins after x throws, not on every clear
-  [ ] 0.15 Game: Improve undo ("Löschen") and skip ("Weiter") correctness
+  [ ] 0.11 Game (maybe): Settings panel left, scoring panel right (layout)
+  [x] 0.12 Game: Clearer active-player indicator + current-throw stats
+  [x] 0.13 Game: Show "Wurf 2 von 3" instead of "2/3"
+  [x] 0.14 Game: Abräumen — reset pins after x throws, not on every clear
+  [x] 0.15 Game: Improve undo ("Löschen") and skip ("Weiter") correctness
   [ ] 0.16 Game: Larger visual feedback on successful/failed pin entry
-  [ ] 0.17 Admin: Rename to "Einstellungen", move admin into a sub-section
+  [x] 0.17 Admin: Rename to "Einstellungen", move admin into a sub-section
 
 PHASE 1 — Flutter Client  [PLANNED]
   Goal: Rebuild the POC as a cross-platform Flutter app with local SQLite.
